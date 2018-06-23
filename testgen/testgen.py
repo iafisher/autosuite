@@ -6,13 +6,15 @@ _tests = []
 _running = True
 _call_depth = 0
 
-# expected: True if f(*args, **kwargs) should equal result, False otherwise.
-# exception: True if f(*args, **kwargs) should result in an exception.
+# typ: one of EQUAL, NOT_EQUAL, or EXCEPTION
 # f: the function to be tested.
 # args, kwargs: the positional and keyword arguments to the functions.
 # result: either the actual result of the function or the exception it raised, depending on the
 #   value of the exception field.
-Result = namedtuple('Result', ['expected', 'exception', 'f', 'args', 'kwargs', 'result'])
+TestCase = namedtuple('TestCase', ['typ', 'f', 'args', 'kwargs', 'result'])
+EQUAL = 'EQ'
+NOT_EQUAL = 'NEQ'
+EXCEPTION = 'EXC'
 
 def register(f):
     def wrapper(*args, **kwargs):
@@ -25,28 +27,24 @@ def register(f):
         try:
             res = f(*args, **kwargs)
         except Exception as e:
-            res = Result(None, True, f, args, kwargs, e)
+            case = TestCase(EXCEPTION, f, args, kwargs, e)
             traceback.print_exception(type(e), e, sys.exc_info()[2], limit=15)
         else:
-            res = Result(None, False, f, args, kwargs, res)
+            case = TestCase(None, f, args, kwargs, res)
             print(repr(res.result))
         _call_depth -= 1
 
-        while True:
-            yesno = input('[testhelper] Is this the expected result (y[es]/n[o]/c[ancel])? ')
-            yesno = yesno.lstrip()
-            if yesno.startswith('y'):
-                res = res._replace(expected=True)
-            elif yesno.startswith('n'):
-                if res.exception is False:
-                    res = res._replace(expected=False)
-                else:
-                    return
-            elif yesno.startswith('c'):
-                return
+        response = _get_input()
+        if response == 'y':
+            if case.typ != EXCEPTION:
+                case = case._replace(typ=EQUAL)
+        elif response == 'n' and case.typ != EXCEPTION:
+            case = case._replace(typ=NOT_EQUAL)
+        else:
+            return
 
         # NOTE: What happens if the module is reloaded? Presumably the functions won't be.
-        _tests.append(res)
+        _tests.append(case)
     return wrapper
 
 def run():
@@ -65,7 +63,7 @@ def generate(tests=_tests):
         return ''
 
     indent = ' ' * 8
-    test_body = '\n'.join(indent + _result_to_test(r) for r in tests)
+    test_body = '\n'.join(indent + _testcase_to_str(case) for case in tests)
     imports = _generate_imports(tests)
     return '''\
 import unittest
@@ -77,25 +75,25 @@ class Tester(unittest.TestCase):
 {}
 '''.format(imports, test_body)
 
-def _result_to_test(res):
-    fcall = _format_function_call(res)
-    if res.exception:
-        excname = _format_exception_name(res.result)
+def _testcase_to_str(case):
+    fcall = _format_function_call(case)
+    if case.typ == EXCEPTION:
+        excname = _format_exception_name(case.result)
         return 'with self.assertRaises({}):\n    {}'.format(excname, fcall)
-    elif res.expected:
-        return 'self.assertEqual({}, {!r})'.format(fcall, res.result)
+    elif case.typ == EQUAL:
+        return 'self.assertEqual({}, {!r})'.format(fcall, case.result)
     else:
-        return 'self.assertNotEqual({}, {!r})'.format(fcall, res.result)
+        return 'self.assertNotEqual({}, {!r})'.format(fcall, case.result)
 
-def _format_function_call(res):
+def _format_function_call(case):
     # TODO: Catch when repr() returns an invalid result (i.e., '<...>')
-    args = ', '.join(repr(a) for a in res.args)
-    kwargs = ', '.join('{}={!r}'.format(k, v) for k, v in res.kwargs.items())
+    args = ', '.join(repr(a) for a in case.args)
+    kwargs = ', '.join('{}={!r}'.format(k, v) for k, v in case.kwargs.items())
     if args and kwargs:
         arglist = args + ', ' + kwargs
     else:
         arglist = args + kwargs
-    return _format_mod(res.f.__module__) + res.f.__qualname__ + '(' + arglist + ')'
+    return _format_mod(case.f.__module__) + case.f.__qualname__ + '(' + arglist + ')'
 
 def _format_exception_name(exc):
     return _format_mod(exc.__class__.__module__) + exc.__class__.__qualname__
@@ -105,10 +103,10 @@ def _format_mod(module):
 
 def _generate_imports(tests):
     modules = set()
-    for result in tests:
-        modules.add(result.f.__module__)
-        if result.exception:
-            modules.add(result.result.__class__.__module__)
+    for case in tests:
+        modules.add(case.f.__module__)
+        if case.typ == EXCEPTION:
+            modules.add(case.result.__class__.__module__)
     modules.discard('__main__')
     modules.discard('builtins')
     return '\n'.join('import {}\n'.format(m) for m in modules)
@@ -129,3 +127,10 @@ def clear():
     global _pos_tests, _neg_tests
     _pos_tests.clear()
     _neg_tests.clear()
+
+def _get_input():
+    while True:
+        yesno = input('[testhelper] Is this the expected result (y[es]/n[o]/c[ancel])? ')
+        yesno = yesno.lstrip()
+        if yesno and yesno[0] in 'ync':
+            return yesno[0]

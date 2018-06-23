@@ -1,7 +1,8 @@
 import unittest
 
 from testgen.testgen import (
-    Result, _result_to_test, _format_mod, generate, _format_exception_name
+    TestCase, _testcase_to_str, _format_mod, generate, _format_exception_name, EQUAL, NOT_EQUAL,
+    EXCEPTION
 )
 
 from mylib import fib, FibonacciError
@@ -12,13 +13,13 @@ def dummy(*args, **kwargs):
 
 
 class Tester(unittest.TestCase):
-    def test_result_to_test(self):
-        res = Result(True, False, dummy, (1, 2, 3), {'verbose': True}, 42)
-        self.assertEqual(_result_to_test(res),
+    def test_testcase_to_str(self):
+        res = TestCase(EQUAL, dummy, (1, 2, 3), {'verbose': True}, 42)
+        self.assertEqual(_testcase_to_str(res),
             'self.assertEqual(test_main.dummy(1, 2, 3, verbose=True), 42)')
 
-        res = Result(True, True, fib, (-1,), {}, FibonacciError())
-        self.assertEqual(_result_to_test(res),
+        res = TestCase(EXCEPTION, fib, (-1,), {}, FibonacciError())
+        self.assertEqual(_testcase_to_str(res),
             'with self.assertRaises(mylib.FibonacciError):\n    mylib.fib(-1)')
 
     def test_format_mod(self):
@@ -32,7 +33,7 @@ class Tester(unittest.TestCase):
 
     def test_generate(self):
         self.assertEqual(generate([]), '')
-        tests = [Result(True, False, dummy, (1, 2, 3), {}, 42)]
+        tests = [TestCase(EQUAL, dummy, (1, 2, 3), {}, 42)]
         self.assertEqual(generate(tests), '''\
 import unittest
 
