@@ -60,7 +60,7 @@ def run():
         assert(f(*args, **kwargs) != res)
     _running = _running_old
 
-def compile(tests=_tests):
+def generate(tests=_tests):
     if not tests:
         return ''
 

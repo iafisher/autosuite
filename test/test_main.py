@@ -1,6 +1,6 @@
 import unittest
 
-from testgen.testgen import Result, _result_to_test, _format_mod, compile
+from testgen.testgen import Result, _result_to_test, _format_mod, generate
 from mylib import fib, FibonacciError
 
 
@@ -23,5 +23,5 @@ class Tester(unittest.TestCase):
         self.assertEqual(_format_mod('builtins'), '')
         self.assertEqual(_format_mod('__main__'), '')
 
-    def test_compile(self):
-        self.assertEqual(compile([]), '')
+    def test_generate(self):
+        self.assertEqual(generate([]), '')
