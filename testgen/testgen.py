@@ -16,7 +16,6 @@ Result = namedtuple('Result', ['expected', 'exception', 'f', 'args', 'kwargs', '
 
 def register(f):
     def wrapper(*args, **kwargs):
-        # TODO: Handle functions that raise exceptions?
         global _call_depth, _pos_tests, _neg_tests
 
         if not _running or _call_depth != 0:
@@ -32,14 +31,20 @@ def register(f):
             res = Result(None, False, f, args, kwargs, res)
             print(repr(res.result))
         _call_depth -= 1
-        yesno = input('[testhelper] Is this the expected result (y[es]/n[o]/c[ancel])? ')
-        yesno = yesno.lstrip()
-        if yesno.startswith('y'):
-            res = res._replace(expected=True)
-        elif yesno.startswith('n') and res.exception is False:
-            res = res._replace(expected=False)
-        else:
-            return
+
+        while True:
+            yesno = input('[testhelper] Is this the expected result (y[es]/n[o]/c[ancel])? ')
+            yesno = yesno.lstrip()
+            if yesno.startswith('y'):
+                res = res._replace(expected=True)
+            elif yesno.startswith('n'):
+                if res.exception is False:
+                    res = res._replace(expected=False)
+                else:
+                    return
+            elif yesno.startswith('c'):
+                return
+
         # NOTE: What happens if the module is reloaded? Presumably the functions won't be.
         _tests.append(res)
     return wrapper
@@ -55,10 +60,13 @@ def run():
         assert(f(*args, **kwargs) != res)
     _running = _running_old
 
-def compile():
-    # TODO: Need to generate module imports
-    imports = _generate_imports(_tests)
-    test_body = '\n'.join(_result_to_test(r) for r in _tests)
+def compile(tests=_tests):
+    if not tests:
+        return ''
+
+    indent = ' ' * 8
+    test_body = '\n'.join(indent + _result_to_test(r) for r in tests)
+    imports = _generate_imports(tests)
     return '''\
 import unittest
 
@@ -71,18 +79,14 @@ class MyTestCase(unittest.TestCase):
 '''.format(imports, test_body)
 
 def _result_to_test(res):
-    indent = ' ' * 8
     fcall = _format_function_call(res)
     if res.exception:
-        excname = res.result.__class__.__qualname__
-        if res.result.__class__.__module__ not in ('builtins', '__main__'):
-            excname = res.result.__class__.__module__ + '.' + excname
-        return indent + 'with self.assertRaises({}):\n'.format(excname) + \
-            indent + '    ' + fcall
+        excname = _format_exception_name(res.result)
+        return 'with self.assertRaises({}):\n    {}'.format(excname, fcall)
     elif res.expected:
-        return indent + 'self.assertEqual({}, {!r})'.format(fcall, res.result)
+        return 'self.assertEqual({}, {!r})'.format(fcall, res.result)
     else:
-        return indent + 'self.assertNotEqual({}, {!r})'.format(fcall, res.result)
+        return 'self.assertNotEqual({}, {!r})'.format(fcall, res.result)
 
 def _format_function_call(res):
     # TODO: Catch when repr() returns an invalid result (i.e., '<...>')
@@ -92,11 +96,13 @@ def _format_function_call(res):
         arglist = args + ', ' + kwargs
     else:
         arglist = args + kwargs
-    modname = res.f.__module__
-    if modname not in ('builtins', '__main__'):
-        return modname + '.' + res.f.__qualname__ + '(' + arglist + ')'
-    else:
-        return res.f.__qualname__ + '(' + arglist + ')'
+    return _format_mod(res.f.__module__) + res.f.__qualname__ + '(' + arglist + ')'
+
+def _format_exception_name(exc):
+    return _format_mod(exc.__class__.__module__) + exc.__class__.__qualname__
+
+def _format_mod(module):
+    return module + '.' if module not in ('builtins', '__main__') else ''
 
 def _generate_imports(tests):
     modules = set()
