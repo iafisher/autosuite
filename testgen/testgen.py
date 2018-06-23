@@ -72,10 +72,9 @@ import unittest
 
 {}
 
-class MyTestCase(unittest.TestCase):
+class Tester(unittest.TestCase):
     def test_all(self):
 {}
-
 '''.format(imports, test_body)
 
 def _result_to_test(res):
