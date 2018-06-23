@@ -24,12 +24,12 @@ A full sample session:
 >>> fibonacci = tg.register(mylib.fibonacci) # The `register` function can also be used as a decorator
 >>> fibonacci(12)
 144
-[testhelper] Is this the expected result (y[es]/n[o]/c[ancel])? y
+[testgen] Is this the expected result (y[es]/n[o]/c[ancel])? y
 >>> fibonacci(-1)
 Traceback (most recent call last):
   ...
 ValueError
-[testhelper] Is this the expected result (y[es]/n[o]/c[ancel])? y
+[testgen] Is this the expected result (y[es]/n[o]/c[ancel])? y
 >>> print(tg.generate())
 import unittest
 

@@ -108,7 +108,7 @@ def _generate_imports(tests):
 
 def _get_input():
     while True:
-        yesno = input('[testhelper] Is this the expected result (y[es]/n[o]/c[ancel])? ')
+        yesno = input('[testgen] Is this the expected result (y[es]/n[o]/c[ancel])? ')
         yesno = yesno.lstrip()
         if yesno and yesno[0] in 'ync':
             return yesno[0]
