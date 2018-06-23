@@ -47,3 +47,20 @@ Alternative names:
 - pyshelltest (shelltest is taken)
 - testmate
 - swandive
+
+## Limitations
+testgen makes use of Python's introspection capabilities, but not everything can be accomplished
+perfectly. testgen's goal is get your unit tests up and running with minimal effort, but in some
+more complex cases the generated test module might require small modifications.
+
+Here are the known limitations:
+
+- All arguments passed to functions that you are testing must be recoverable from their `repr`
+  string. That is, `o == eval(repr(o))` must be true. This property holds for almost all built-in
+  types [1] and is explicitly recommended for implementations of `repr` by the
+  [Python Language Reference](https://docs.python.org/3.5/reference/datamodel.html#object.__repr__),
+  but for some types it is not possible.
+- testgen is not thread-safe.
+
+[1] Memoryviews, module objects, function objects, class objects, and perhaps some other uncommon
+    types are not reconstructable from their `repr`s.

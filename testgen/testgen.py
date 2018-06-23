@@ -71,14 +71,8 @@ class MyTestCase(unittest.TestCase):
 '''.format(imports, test_body)
 
 def _result_to_test(res):
-    args = ', '.join(repr(a) for a in res.args)
-    kwargs = ', '.join('{}={!r}'.format(k, v) for k, v in res.kwargs.items())
-    if args and kwargs:
-        arglist = args + ', ' + kwargs
-    else:
-        arglist = args + kwargs
-    fcall = res.f.__module__ + '.' + res.f.__qualname__ + '(' + arglist + ')'
     indent = ' ' * 8
+    fcall = _format_function_call(res)
     if res.exception:
         excname = res.result.__class__.__qualname__
         if res.result.__class__.__module__ not in ('builtins', '__main__'):
@@ -89,6 +83,20 @@ def _result_to_test(res):
         return indent + 'self.assertEqual({}, {!r})'.format(fcall, res.result)
     else:
         return indent + 'self.assertNotEqual({}, {!r})'.format(fcall, res.result)
+
+def _format_function_call(res):
+    # TODO: Catch when repr() returns an invalid result (i.e., '<...>')
+    args = ', '.join(repr(a) for a in res.args)
+    kwargs = ', '.join('{}={!r}'.format(k, v) for k, v in res.kwargs.items())
+    if args and kwargs:
+        arglist = args + ', ' + kwargs
+    else:
+        arglist = args + kwargs
+    modname = res.f.__module__
+    if modname not in ('builtins', '__main__'):
+        return modname + '.' + res.f.__qualname__ + '(' + arglist + ')'
+    else:
+        return res.f.__qualname__ + '(' + arglist + ')'
 
 def _generate_imports(tests):
     modules = set()
