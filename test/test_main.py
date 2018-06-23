@@ -1,7 +1,7 @@
 import unittest
 
 from testgen.testgen import (
-    TestCase, _testcase_to_str, _format_mod, generate, _format_exception_name, EQUAL, NOT_EQUAL,
+    TestSuite, TestCase, _testcase_to_str, _format_mod, _format_exception_name, EQUAL, NOT_EQUAL,
     EXCEPTION
 )
 
@@ -32,9 +32,10 @@ class Tester(unittest.TestCase):
         self.assertEqual(_format_exception_name(FibonacciError()), 'mylib.FibonacciError')
 
     def test_generate(self):
-        self.assertEqual(generate([]), '')
-        tests = [TestCase(EQUAL, dummy, (1, 2, 3), {}, 42)]
-        self.assertEqual(generate(tests), '''\
+        tg = TestSuite()
+        self.assertEqual(tg.generate(), '')
+        tg.tests = [TestCase(EQUAL, dummy, (1, 2, 3), {}, 42)]
+        self.assertEqual(tg.generate(), '''\
 import unittest
 
 import test_main
@@ -44,3 +45,6 @@ class Tester(unittest.TestCase):
     def test_all(self):
         self.assertEqual(test_main.dummy(1, 2, 3), 42)
 ''')
+
+        tg.clear()
+        self.assertEqual(tg.generate(), '')

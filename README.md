@@ -1,11 +1,12 @@
 A small Python utility that auto-generates unit tests from an interactive shell session.
 
 ## Usage
-Fire up a Python shell and import the `testgen` module. Wrap any functions you wish to unit-test
-with `testgen.register`:
+Fire up a Python shell, import the `testgen` module, and initialize a `TestSuite` object. Wrap any
+functions you wish to unit-test with `TestSuite.register`:
 
 ```python
->>> my_function = testgen.register(my_module.my_function)
+>>> tg = testgen.TestSuite()
+>>> my_function = tg.register(my_module.my_function)
 ```
 
 Then, test and debug as you normally would. Whenever you call the function, you will be prompted to
@@ -18,7 +19,8 @@ module with all the results from your interactive session!
 A full sample session:
 
 ```python
->>> import mylib, testgen as tg
+>>> import mylib, testgen
+>>> tg = testgen.TestSuite()
 >>> fibonacci = tg.register(mylib.fibonacci) # The `register` function can also be used as a decorator
 >>> fibonacci(12)
 144
@@ -28,12 +30,12 @@ Traceback (most recent call last):
   ...
 ValueError
 [testhelper] Is this the expected result (y[es]/n[o]/c[ancel])? y
->>> print(tg.compile())
+>>> print(tg.generate())
 import unittest
 
 import mylib
 
-class MyTestCase(unittest.TestCase):
+class Tester(unittest.TestCase):
     def test_all(self):
         self.assertEqual(mylib.fibonacci(12), 144)
         with self.assertRaises(ValueError):
@@ -60,7 +62,6 @@ Here are the known limitations:
   types [1] and is explicitly recommended for implementations of `repr` by the
   [Python Language Reference](https://docs.python.org/3.5/reference/datamodel.html#object.__repr__),
   but for some types it is not possible.
-- testgen is not thread-safe.
 
 [1] Memoryviews, module objects, function objects, class objects, and perhaps some other uncommon
     types are not reconstructable from their `repr`s.

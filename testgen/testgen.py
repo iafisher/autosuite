@@ -16,56 +16,48 @@ EQUAL = 'EQ'
 NOT_EQUAL = 'NEQ'
 EXCEPTION = 'EXC'
 
-def register(f):
-    def wrapper(*args, **kwargs):
-        global _call_depth, _pos_tests, _neg_tests
+class TestSuite:
+    def __init__(self):
+        self.tests = []
+        self.call_depth = 0
 
-        if not _running or _call_depth != 0:
-            return f(*args, **kwargs)
+    def register(self, f):
+        def wrapper(*args, **kwargs):
+            if self.call_depth != 0:
+                return f(*args, **kwargs)
 
-        _call_depth += 1
-        try:
-            res = f(*args, **kwargs)
-        except Exception as e:
-            case = TestCase(EXCEPTION, f, args, kwargs, e)
-            traceback.print_exception(type(e), e, sys.exc_info()[2], limit=15)
-        else:
-            case = TestCase(None, f, args, kwargs, res)
-            print(repr(res.result))
-        _call_depth -= 1
+            self.call_depth += 1
+            try:
+                res = f(*args, **kwargs)
+            except Exception as e:
+                case = TestCase(EXCEPTION, f, args, kwargs, e)
+                traceback.print_exception(type(e), e, sys.exc_info()[2], limit=15)
+            else:
+                case = TestCase(None, f, args, kwargs, res)
+                print(repr(case.result))
+            self.call_depth -= 1
 
-        response = _get_input()
-        if response == 'y':
-            if case.typ != EXCEPTION:
-                case = case._replace(typ=EQUAL)
-        elif response == 'n' and case.typ != EXCEPTION:
-            case = case._replace(typ=NOT_EQUAL)
-        else:
-            return
+            response = _get_input()
+            if response == 'y':
+                if case.typ != EXCEPTION:
+                    case = case._replace(typ=EQUAL)
+            elif response == 'n' and case.typ != EXCEPTION:
+                case = case._replace(typ=NOT_EQUAL)
+            else:
+                return
 
-        # NOTE: What happens if the module is reloaded? Presumably the functions won't be.
-        _tests.append(case)
-    return wrapper
+            # NOTE: What happens if the module is reloaded? Presumably the functions won't be.
+            self.tests.append(case)
+        return wrapper
 
-def run():
-    global _running
+    def generate(self):
+        if not self.tests:
+            return ''
 
-    _running_old = _running
-    _running = False
-    for f, args, kwargs, res in _pos_tests:
-        assert(f(*args, **kwargs) == res)
-    for f, args, kwargs, res in _neg_tests:
-        assert(f(*args, **kwargs) != res)
-    _running = _running_old
-
-def generate(tests=_tests):
-    if not tests:
-        return ''
-
-    indent = ' ' * 8
-    test_body = '\n'.join(indent + _testcase_to_str(case) for case in tests)
-    imports = _generate_imports(tests)
-    return '''\
+        indent = ' ' * 8
+        test_body = '\n'.join(indent + _testcase_to_str(case) for case in self.tests)
+        imports = _generate_imports(self.tests)
+        return '''\
 import unittest
 
 {}
@@ -74,6 +66,9 @@ class Tester(unittest.TestCase):
     def test_all(self):
 {}
 '''.format(imports, test_body)
+
+    def clear(self):
+        self.tests.clear()
 
 def _testcase_to_str(case):
     fcall = _format_function_call(case)
@@ -110,23 +105,6 @@ def _generate_imports(tests):
     modules.discard('__main__')
     modules.discard('builtins')
     return '\n'.join('import {}\n'.format(m) for m in modules)
-
-def on():
-    global _running
-    _running = True
-
-def off():
-    global _running
-    _running = False
-
-def toggle():
-    global _running
-    _running = not _running
-
-def clear():
-    global _pos_tests, _neg_tests
-    _pos_tests.clear()
-    _neg_tests.clear()
 
 def _get_input():
     while True:
