@@ -4,7 +4,7 @@ with open('README.md', 'r') as f:
     long_description = f.read()
 
 setup(
-    name='testgen',
+    name='autosuite',
     version='0.1',
     description='Auto-generate unit tests from interactive shell sessions',
     license='MIT',

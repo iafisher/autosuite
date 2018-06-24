@@ -1,11 +1,11 @@
 A small Python utility that auto-generates unit tests from an interactive shell session.
 
 ## Usage
-Fire up a Python shell, import the `testgen` module, and initialize a `TestSuite` object. Wrap any
+Fire up a Python shell, import the `autosuite` module, and initialize a `TestSuite` object. Wrap any
 functions you wish to unit-test with `TestSuite.register`:
 
 ```python
->>> tg = testgen.TestSuite()
+>>> tg = autosuite.TestSuite()
 >>> my_function = tg.register(my_module.my_function)
 ```
 
@@ -13,23 +13,23 @@ Then, test and debug as you normally would. Whenever you call the function, you 
 answer whether the function returned the correct result or not. Your answers to these prompts will
 be used to generate the test suite.
 
-Once you're done debugging, then just call `testgen.compile` to generate a complete Python test
+Once you're done debugging, then just call `autosuite.generate` to generate a complete Python test
 module with all the results from your interactive session!
 
 A full sample session:
 
 ```python
->>> import mylib, testgen
->>> tg = testgen.TestSuite()
+>>> import mylib, autosuite
+>>> tg = autosuite.TestSuite()
 >>> fibonacci = tg.register(mylib.fibonacci) # The `register` function can also be used as a decorator
 >>> fibonacci(12)
 144
-[testgen] Is this the expected result (y[es]/n[o]/c[ancel])? y
+[autosuite] Is this the expected result (y[es]/n[o]/c[ancel])? y
 >>> fibonacci(-1)
 Traceback (most recent call last):
   ...
 ValueError
-[testgen] Is this the expected result (y[es]/n[o]/c[ancel])? y
+[autosuite] Is this the expected result (y[es]/n[o]/c[ancel])? y
 >>> print(tg.generate())
 import unittest
 
@@ -45,14 +45,9 @@ class Tester(unittest.TestCase):
 ## API reference
 TODO
 
-Alternative names:
-- pyshelltest (shelltest is taken)
-- testmate
-- swandive
-
 ## Limitations
-testgen makes use of Python's introspection capabilities, but not everything can be accomplished
-perfectly. testgen's goal is get your unit tests up and running with minimal effort, but in some
+autosuite makes use of Python's introspection capabilities, but not everything can be accomplished
+perfectly. autosuite's goal is get your unit tests up and running with minimal effort, but in some
 more complex cases the generated test module might require small modifications.
 
 Here are the known limitations:

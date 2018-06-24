@@ -1,6 +1,6 @@
 import unittest
 
-from testgen.testgen import (
+from autosuite.autosuite import (
     TestSuite, TestCase, _testcase_to_str, _format_mod, _format_exception_name, EQUAL, NOT_EQUAL,
     EXCEPTION
 )
