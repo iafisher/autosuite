@@ -42,6 +42,18 @@ def fibonacci(n):
    ...
 ```
 
+## Installation
+Clone the repository locally:
+
+```
+$ git clone https://github.com/iafisher/autosuite.git
+```
+
+Install:
+```
+$ python3 setup.py install
+```
+
 ## API reference
 TODO
 
