@@ -1,5 +1,6 @@
 import sys
 import traceback
+import inspect
 from collections import namedtuple
 
 # typ: one of EQUAL, NOT_EQUAL, or EXCEPTION
@@ -15,14 +16,15 @@ EXCEPTION = 'EXC'
 class TestSuite:
     def __init__(self):
         self.tests = []
-        self.call_depth = 0
 
     def record(self, f):
+        # TODO: This is probably broken.
+        caller = inspect.stack()[1].function
+
         def wrapper(*args, **kwargs):
-            if self.call_depth != 0:
+            if inspect.stack()[1].function != caller:
                 return f(*args, **kwargs)
 
-            self.call_depth += 1
             try:
                 res = f(*args, **kwargs)
             except Exception as e:
@@ -31,7 +33,6 @@ class TestSuite:
             else:
                 case = TestCase(None, f, args, kwargs, res)
                 print(repr(case.result))
-            self.call_depth -= 1
 
             response = _get_input()
             if response == 'y':
