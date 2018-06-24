@@ -1,4 +1,6 @@
 # autosuite
+**NOTE**: This package is in beta, and the public API may change without warning.
+
 autosuite is a small Python utility that automatically generates unit tests from interactive shell
 sessions. All you have to do is hook in the autosuite library, debug your programs as you normally
 would in the Python shell, and when you're finished autosuite will generate a working unit-test
