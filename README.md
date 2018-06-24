@@ -1,27 +1,15 @@
-A small Python utility that auto-generates unit tests from an interactive shell session.
+# autosuite
+autosuite is a small Python utility that automatically generates unit tests from interactive shell
+sessions. All you have to do is hook in the autosuite library, debug your programs as you normally
+would in the Python shell, and when you're finished autosuite will generate a working unit-test
+module for you based on your interactions!
 
-## Usage
-Fire up a Python shell, import the `autosuite` module, and initialize a `TestSuite` object. Wrap any
-functions you wish to unit-test with `TestSuite.register`:
-
-```python
->>> tg = autosuite.TestSuite()
->>> my_function = tg.register(my_module.my_function)
-```
-
-Then, test and debug as you normally would. Whenever you call the function, you will be prompted to
-answer whether the function returned the correct result or not. Your answers to these prompts will
-be used to generate the test suite.
-
-Once you're done debugging, then just call `autosuite.generate` to generate a complete Python test
-module with all the results from your interactive session!
-
-A full sample session:
+Here's how to use it:
 
 ```python
 >>> import mylib, autosuite
->>> tg = autosuite.TestSuite()
->>> fibonacci = tg.register(mylib.fibonacci) # The `register` function can also be used as a decorator
+>>> ts = autosuite.TestSuite()
+>>> fibonacci = ts.register(mylib.fibonacci)
 >>> fibonacci(12)
 144
 [autosuite] Is this the expected result (y[es]/n[o]/c[ancel])? y
@@ -30,7 +18,7 @@ Traceback (most recent call last):
   ...
 ValueError
 [autosuite] Is this the expected result (y[es]/n[o]/c[ancel])? y
->>> print(tg.generate())
+>>> print(ts.generate())
 import unittest
 
 import mylib
@@ -40,6 +28,18 @@ class Tester(unittest.TestCase):
         self.assertEqual(mylib.fibonacci(12), 144)
         with self.assertRaises(ValueError):
             mylib.fibonacci(-1)
+```
+
+You can also use the `register` function as a decorator:
+
+```python
+import autosuite
+
+ts = autosuite.TestSuite()
+
+@ts.register
+def fibonacci(n):
+   ...
 ```
 
 ## API reference
