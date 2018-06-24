@@ -1,3 +1,7 @@
 __pycache__
 *.swp
+
+# Packaging directories
 *.egg-info
+build
+dist
