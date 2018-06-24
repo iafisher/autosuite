@@ -2,10 +2,6 @@ import sys
 import traceback
 from collections import namedtuple
 
-_tests = []
-_running = True
-_call_depth = 0
-
 # typ: one of EQUAL, NOT_EQUAL, or EXCEPTION
 # f: the function to be tested.
 # args, kwargs: the positional and keyword arguments to the functions.
