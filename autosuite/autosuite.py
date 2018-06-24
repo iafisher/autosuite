@@ -102,7 +102,7 @@ def _generate_imports(tests):
             modules.add(case.result.__class__.__module__)
     modules.discard('__main__')
     modules.discard('builtins')
-    return '\n'.join('import {}\n'.format(m) for m in modules)
+    return '\n'.join('import {}'.format(m) for m in sorted(modules))
 
 def _get_input():
     while True:
