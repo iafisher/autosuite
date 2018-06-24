@@ -57,7 +57,34 @@ $ python3 setup.py install
 ```
 
 ## API reference
-TODO
+autosuite's public API is one class, `TestSuite`, with two public methods, `record` and `generate`.
+
+```python
+TestSuite()
+```
+
+Initialize a `TestSuite` object.
+
+```python
+TestSuite.record(f)
+```
+
+Return a wrapped function that calls `f` with the arguments it is given, and then prompts the user
+to verify that the result of the function call is correct. Typical usage is
+
+```python
+>>> my_func = ts.record(my_func)
+>>> my_func('hurray')
+...
+```
+
+Once the function has been recorded with the test suite, it can be called normally.
+
+```python
+TestSuite.generate()
+```
+
+Print to standard output a full Python test module with unit tests induced from recorded functions.
 
 ## Limitations
 autosuite makes use of Python's introspection capabilities, but not everything can be accomplished
