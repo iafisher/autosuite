@@ -20,7 +20,7 @@ class Tester(unittest.TestCase):
 
         res = TestCase(EXCEPTION, fib, (-1,), {}, FibonacciError())
         self.assertEqual(_testcase_to_str(res),
-            'with self.assertRaises(mylib.FibonacciError):\n    mylib.fib(-1)')
+            'with self.assertRaises(mylib.FibonacciError):\n            mylib.fib(-1)')
 
     def test_format_mod(self):
         self.assertEqual(_format_mod('mylib'), 'mylib.')
@@ -34,7 +34,10 @@ class Tester(unittest.TestCase):
     def test_generate(self):
         tg = TestSuite()
         self.assertEqual(tg.generate(), '')
-        tg.tests = [TestCase(EQUAL, dummy, (1, 2, 3), {}, 42)]
+        tg.tests = [
+            TestCase(EQUAL, dummy, (1, 2, 3), {}, 42),
+            TestCase(EXCEPTION, dummy, (-1,), {}, ValueError()),
+        ]
         self.assertEqual(tg.generate(), '''\
 import unittest
 
@@ -44,6 +47,8 @@ import test_main
 class Tester(unittest.TestCase):
     def test_all(self):
         self.assertEqual(test_main.dummy(1, 2, 3), 42)
+        with self.assertRaises(ValueError):
+            test_main.dummy(-1)
 ''')
 
         tg.clear()

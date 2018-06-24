@@ -70,7 +70,9 @@ def _testcase_to_str(case):
     fcall = _format_function_call(case)
     if case.typ == EXCEPTION:
         excname = _format_exception_name(case.result)
-        return 'with self.assertRaises({}):\n    {}'.format(excname, fcall)
+        # TODO: Clean this up by removing the indent-insertion in the second line and putting it
+        # elsewhere.
+        return 'with self.assertRaises({}):\n            {}'.format(excname, fcall)
     elif case.typ == EQUAL:
         return 'self.assertEqual({}, {!r})'.format(fcall, case.result)
     else:
