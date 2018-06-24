@@ -11,7 +11,7 @@ Here's how to use it:
 ```python
 >>> import mylib, autosuite
 >>> ts = autosuite.TestSuite()
->>> fibonacci = ts.register(mylib.fibonacci)
+>>> fibonacci = ts.record(mylib.fibonacci)
 >>> fibonacci(12)
 144
 [autosuite] Is this the expected result (y[es]/n[o]/c[ancel])? y
@@ -32,14 +32,14 @@ class Tester(unittest.TestCase):
             mylib.fibonacci(-1)
 ```
 
-You can also use the `register` function as a decorator:
+You can also use the `record` function as a decorator:
 
 ```python
 import autosuite
 
 ts = autosuite.TestSuite()
 
-@ts.register
+@ts.record
 def fibonacci(n):
    ...
 ```

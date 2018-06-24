@@ -21,7 +21,7 @@ class TestSuite:
         self.tests = []
         self.call_depth = 0
 
-    def register(self, f):
+    def record(self, f):
         def wrapper(*args, **kwargs):
             if self.call_depth != 0:
                 return f(*args, **kwargs)
