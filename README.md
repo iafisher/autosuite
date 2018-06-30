@@ -4,7 +4,8 @@
 autosuite is a small Python utility that facilitates simple and rapid testing from the Python shell.
 It lets you replay your interactions with testable functions as unit tests so you don't have to
 constantly re-type the same expressions as you edit and reload your code. When you're finished, it
-will generate a unit-test module with all the recorded interactions, to bootstrap your test suite.
+will help you bootstrap your unit tests by generating a Python `unittest` module with all the
+recorded interactions.
 
 Here's a sample session, with annotations for explanation:
 
