@@ -6,10 +6,11 @@ import traceback
 import unittest
 from collections import defaultdict, namedtuple
 from contextlib import suppress
+from typing import Callable, List
 
 
 # GLOBAL TEST LIST
-_tests = []
+_tests = [] # type: List[TestCase]
 
 
 # typ: one of EQUAL, NOT_EQUAL, or EXCEPTION
@@ -23,7 +24,7 @@ NOT_EQUAL = 'NEQ'
 EXCEPTION = 'EXC'
 
 
-def wrap(func):
+def wrap(func: Callable) -> Callable:
     """Wrap the function with the autosuite testing code."""
 
     @functools.wraps(func)
@@ -59,14 +60,14 @@ def wrap(func):
     return wrapped
 
 
-def test():
+def test() -> None:
     """Run the collected tests using Python's unittest library."""
     unittest.main(module='autosuite', exit=False)
 
 class Tester(unittest.TestCase):
     """The TestCase subclass used to run the test suite."""
 
-    def test_all(self):
+    def test_all(self) -> None:
         for case in _tests:
             if case.typ == EQUAL:
                 self.assertEqual(case.f(*case.args, **case.kwargs), case.result)
@@ -77,19 +78,19 @@ class Tester(unittest.TestCase):
                     case.f(*case.args, **case.kwargs)
 
 
-def gettests():
+def gettests() -> List[TestCase]:
     """Return the test suite as a list of TestCase objects. This method is for testing purposes and
     should not generally be used directly.
     """
     return _tests
 
 
-def suite(fpath=None):
+def suite(fpath: str = None) -> None:
     """Write the test suite to file as Python code using the unittest library. If fpath is None (the
     default), then the test suite is printed to standard output.
     """
     if not _tests:
-        return ''
+        return
 
     indent = ' ' * 8
     test_body = '\n'.join(indent + _testcase_to_str(case) for case in _tests)
@@ -107,16 +108,16 @@ class Tester(unittest.TestCase):
     if fpath is None:
         print(suite_code)
     else:
-        with open(fpath, 'w'):
-            fpath.write(suite_code)
+        with open(fpath, 'w') as f:
+            f.write(suite_code)
 
 
-def clear():
+def clear() -> None:
     """Clear all tests from the suite."""
     _tests.clear()
 
 
-def pop():
+def pop() -> None:
     """Remove the most recent test case from the test suite. Useful if you accidentally enter the
     wrong answer at the autosuite prompt.
 
@@ -126,7 +127,7 @@ def pop():
         _tests.pop()
 
 
-def reload(func):
+def reload(func: Callable) -> Callable:
     """Reload the function from disk. The function may be a function that has already been wrapped
     with autosuite, or a regular function. Regardless, the returned function is autosuite-wrapped.
 
@@ -144,7 +145,7 @@ def reload(func):
     return wrap(new_func)
 
 
-def _testcase_to_str(case):
+def _testcase_to_str(case: TestCase) -> str:
     # TODO: Fail gracefully for args and kwargs that do not have valid reprs.
     fcall = _format_function_call(case)
     if case.typ == EXCEPTION:
@@ -157,7 +158,7 @@ def _testcase_to_str(case):
     else:
         return 'self.assertNotEqual({}, {!r})'.format(fcall, case.result)
 
-def _format_function_call(case):
+def _format_function_call(case: TestCase) -> str:
     # TODO: Catch when repr() returns an invalid result (i.e., '<...>')
     args = ', '.join(repr(a) for a in case.args)
     kwargs = ', '.join('{}={!r}'.format(k, v) for k, v in case.kwargs.items())
@@ -167,13 +168,13 @@ def _format_function_call(case):
         arglist = args + kwargs
     return _format_mod(case.f.__module__) + case.f.__qualname__ + '(' + arglist + ')'
 
-def _format_exception_name(exc):
+def _format_exception_name(exc: Exception) -> str:
     return _format_mod(exc.__class__.__module__) + exc.__class__.__qualname__
 
-def _format_mod(module):
+def _format_mod(module) -> str:
     return module + '.' if module not in ('builtins', '__main__') else ''
 
-def _generate_imports(tests):
+def _generate_imports(tests: List[TestCase]) -> str:
     modules = set()
     for case in tests:
         modules.add(case.f.__module__)
@@ -183,7 +184,7 @@ def _generate_imports(tests):
     modules.discard('builtins')
     return '\n'.join('import {}'.format(m) for m in sorted(modules))
 
-def _get_input():
+def _get_input() -> str:
     while True:
         yesno = input('[autosuite] Is this the expected result (y[es]/n[o]/c[ancel])? ')
         yesno = yesno.lstrip()
