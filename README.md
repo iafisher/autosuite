@@ -6,7 +6,7 @@ It lets you replay your interactions with testable functions as unit tests so yo
 constantly re-type the same expressions as you edit and reload your code. When you're finished, it
 will generate a unit-test module with all the recorded interactions, to bootstrap your test suite.
 
-Here's a sample session (some of the test output has been simplified for brevity):
+Here's a sample session:
 
 ```pycon
 >>> import autosuite as au
@@ -19,16 +19,24 @@ Here's a sample session (some of the test output has been simplified for brevity
 89
 [autosuite] Is this the expected result (y[es]/n[o]/c[ancel])? n
 >>> au.test()
+F
+======================================================================
 FAIL: test_all (autosuite.autosuite.Tester)
-
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/.../autosuite/autosuite.py", line 69, in test_all
+    self.assertNotEqual(case.f(*case.args, **case.kwargs), case.result)
 AssertionError: 89 == 89
 
+----------------------------------------------------------------------
 Ran 1 test in 0.001s
 
 FAILED (failures=1)
 >>> # Let's edit the fiblib.py module to fix the mistake.
 >>> fib = au.reload(fib)
 >>> au.test()
+.
+----------------------------------------------------------------------
 Ran 1 test in 0.001s
 
 OK
