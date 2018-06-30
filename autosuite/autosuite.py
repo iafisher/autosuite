@@ -24,6 +24,8 @@ EXCEPTION = 'EXC'
 
 
 def wrap(func):
+    """Wrap the function with the autosuite testing code."""
+
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         global _tests
@@ -58,9 +60,12 @@ def wrap(func):
 
 
 def test():
+    """Run the collected tests using Python's unittest library."""
     unittest.main(module='autosuite', exit=False)
 
 class Tester(unittest.TestCase):
+    """The TestCase subclass used to run the test suite."""
+
     def test_all(self):
         for case in _tests:
             if case.typ == EQUAL:
@@ -73,10 +78,16 @@ class Tester(unittest.TestCase):
 
 
 def gettests():
+    """Return the test suite as a list of TestCase objects. This method is for testing purposes and
+    should not generally be used directly.
+    """
     return _tests
 
 
 def suite(fpath=None):
+    """Write the test suite to file as Python code using the unittest library. If fpath is None (the
+    default), then the test suite is printed to standard output.
+    """
     if not _tests:
         return ''
 
@@ -101,15 +112,28 @@ class Tester(unittest.TestCase):
 
 
 def clear():
+    """Clear all tests from the suite."""
     _tests.clear()
 
 
 def pop():
+    """Remove the most recent test case from the test suite. Useful if you accidentally enter the
+    wrong answer at the autosuite prompt.
+
+    If the test suite is empty, this function does nothing.
+    """
     with suppress(IndexError):
         _tests.pop()
 
 
 def reload(func):
+    """Reload the function from disk. The function may be a function that has already been wrapped
+    with autosuite, or a regular function. Regardless, the returned function is autosuite-wrapped.
+
+    All the test cases already in the suite that use the function are updated to use the new
+    function. Otherwise, the test suite would report spurious failures for old versions of the
+    function.
+    """
     global _tests
 
     mod = importlib.reload(sys.modules[func.__module__])
