@@ -76,14 +76,14 @@ def gettests():
     return _tests
 
 
-def suite():
+def suite(fpath=None):
     if not _tests:
         return ''
 
     indent = ' ' * 8
     test_body = '\n'.join(indent + _testcase_to_str(case) for case in _tests)
     imports = _generate_imports(_tests)
-    return '''\
+    suite_code = '''\
 import unittest
 
 {}
@@ -92,6 +92,12 @@ class Tester(unittest.TestCase):
     def test_all(self):
 {}
 '''.format(imports, test_body)
+
+    if fpath is None:
+        print(suite_code)
+    else:
+        with open(fpath, 'w'):
+            fpath.write(suite_code)
 
 
 def clear():

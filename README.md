@@ -57,7 +57,7 @@ answer 89 is incorrect. Let's edit `fiblib.py` to fix the Fibonacci calculator.
 Ran 1 test in 0.001s
 
 OK
->>> print(au.suite())
+>>> au.suite()
 import unittest
 
 import fiblib

@@ -96,7 +96,10 @@ class Tester(unittest.TestCase):
             TestCase(EQUAL, dummy, (1, 2, 3), {}, 42),
             TestCase(EXCEPTION, dummy, (-1,), {}, ValueError()),
         ])
-        self.assertEqual(suite(), '''\
+        mock_stdout = StringIO()
+        with redirect_io(new_stdout=mock_stdout):
+            suite()
+        self.assertEqual(mock_stdout.getvalue(), '''\
 import unittest
 
 import test_main
@@ -106,6 +109,7 @@ class Tester(unittest.TestCase):
         self.assertEqual(test_main.dummy(1, 2, 3), 42)
         with self.assertRaises(ValueError):
             test_main.dummy(-1)
+
 ''')
 
         clear()
@@ -113,11 +117,9 @@ class Tester(unittest.TestCase):
 
     def test_wrap(self):
         mock_stdin = StringIO('y\n')
-        with redirect_io(mock_stdin):
+        with redirect_io(new_stdin=mock_stdin):
             wrapped_dummy = wrap(dummy)
             wrapped_dummy()
-        #wrapped_dummy = wrap(dummy)
-        #wrapped_dummy()
         tests = gettests()
         self.assertEqual(len(tests), 1)
         self.assertEqual(tests[0], TestCase(EQUAL, dummy, (), {}, None))
@@ -139,7 +141,7 @@ class Tester(unittest.TestCase):
 
 
 @contextmanager
-def redirect_io(new_stdin, new_stdout=StringIO()):
+def redirect_io(new_stdin=StringIO(), new_stdout=StringIO()):
     """A context manager to redirect stdin and stdout to the given files, and restore them when
     finished.
     """
