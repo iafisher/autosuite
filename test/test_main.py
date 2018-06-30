@@ -1,3 +1,27 @@
+import inspect
+
+# Patch inspect.stack so that when it is invoked from an instance method of the Tester class, it
+# behaves as if it were invoked from the Python shell. The autosuite tool uses inspect.stack to
+# ensure the autosuite code isn't spuriously invoked for recursive calls, so patching it to force
+# the code to run in the test suite is necessary.
+old_inspect_stack = inspect.stack
+
+def new_inspect_stack(*args, **kwargs):
+    stack = old_inspect_stack(*args, **kwargs)
+    # The top frame of the stack is for the new_inspect_stack function itself.
+    stack.pop(0)
+    if is_tester_frame(stack[1].frame):
+        # Insert a frame that mimics the top level of the Python shell.
+        frame = inspect.FrameInfo(frame=None, filename='<stdin>', lineno=1, function='<module>',
+            code_context=None, index=None)
+        stack.insert(1, frame)
+    return stack
+
+def is_tester_frame(frame):
+    return isinstance(frame.f_locals.get('self'), Tester)
+
+inspect.stack = new_inspect_stack
+
 import sys
 import unittest
 from contextlib import contextmanager
@@ -92,6 +116,8 @@ class Tester(unittest.TestCase):
         with redirect_io(mock_stdin):
             wrapped_dummy = wrap(dummy)
             wrapped_dummy()
+        #wrapped_dummy = wrap(dummy)
+        #wrapped_dummy()
         tests = gettests()
         self.assertEqual(len(tests), 1)
         self.assertEqual(tests[0], TestCase(EQUAL, dummy, (), {}, None))
