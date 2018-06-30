@@ -4,8 +4,8 @@ from contextlib import contextmanager
 from io import StringIO
 
 from autosuite.autosuite import (
-    TestSuite, TestCase, _testcase_to_str, _format_mod, _format_exception_name, EQUAL, NOT_EQUAL,
-    EXCEPTION, _generate_imports, _format_function_call
+    TestCase, _testcase_to_str, _format_mod, _format_exception_name, EQUAL, NOT_EQUAL, EXCEPTION,
+    _generate_imports, _format_function_call, wrap, gettests, suite, clear
 )
 
 from mylib import fib, FibonacciError
@@ -20,6 +20,9 @@ class DummyClass:
 
 
 class Tester(unittest.TestCase):
+    def setUp(self):
+        clear()
+
     def test_testcase_to_str(self):
         case = TestCase(EQUAL, dummy, (1, 2, 3), {'verbose': True}, 42)
         self.assertEqual(_testcase_to_str(case),
@@ -62,14 +65,14 @@ class Tester(unittest.TestCase):
         ]
         self.assertEqual(_generate_imports(tests), 'import mylib\nimport test_main')
 
-    def test_generate(self):
-        tg = TestSuite()
-        self.assertEqual(tg.generate(), '')
-        tg.tests = [
+    def test_suite(self):
+        self.assertEqual(suite(), '')
+        tests = gettests()
+        tests.extend([
             TestCase(EQUAL, dummy, (1, 2, 3), {}, 42),
             TestCase(EXCEPTION, dummy, (-1,), {}, ValueError()),
-        ]
-        self.assertEqual(tg.generate(), '''\
+        ])
+        self.assertEqual(suite(), '''\
 import unittest
 
 import test_main
@@ -81,30 +84,29 @@ class Tester(unittest.TestCase):
             test_main.dummy(-1)
 ''')
 
-        tg.clear()
-        self.assertEqual(tg.generate(), '')
+        clear()
+        self.assertEqual(suite(), '')
 
-    def test_record(self):
-        ts = TestSuite()
+    def test_wrap(self):
         mock_stdin = StringIO('y\n')
         with redirect_io(mock_stdin):
-            wrapped_dummy = ts.record(dummy)
+            wrapped_dummy = wrap(dummy)
             wrapped_dummy()
-            self.assertEqual(len(ts.tests), 1)
-            self.assertEqual(ts.tests[0], TestCase(EQUAL, dummy, (), {}, None))
+        tests = gettests()
+        self.assertEqual(len(tests), 1)
+        self.assertEqual(tests[0], TestCase(EQUAL, dummy, (), {}, None))
         self.assertEqual(mock_stdin.readline(), '')
 
-    def test_record_nested(self):
-        """Test that an indirect call (i.e., not from the top-level) to a recorded function does not
+    def test_wrap_nested(self):
+        """Test that an indirect call (i.e., not from the top-level) to a wrapped function does not
         trigger the autosuite prompt.
         """
-        ts = TestSuite()
         mock_stdin = StringIO('y\n')
         mock_stdout = StringIO()
         with redirect_io(mock_stdin, mock_stdout):
-            wrapped_dummy = ts.record(dummy)
+            wrapped_dummy = wrap(dummy)
             (lambda: wrapped_dummy())()
-            self.assertEqual(len(ts.tests), 0)
+            self.assertEqual(len(gettests()), 0)
         # Make sure nothing was read from stdin or written to stdout.
         self.assertEqual(mock_stdin.readline(), 'y\n')
         self.assertEqual(mock_stdout.getvalue(), '')

@@ -1,5 +1,6 @@
 __pycache__
 *.swp
+.mypy_cache
 
 # Packaging directories
 *.egg-info
