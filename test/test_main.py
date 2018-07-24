@@ -1,10 +1,27 @@
-import inspect
+"""Tests for all autosuite functions.
 
-# Patch inspect.stack so that when it is invoked from an instance method of the Tester class, it
-# behaves as if it were invoked from the Python shell. The autosuite tool uses inspect.stack to
-# ensure the autosuite code isn't spuriously invoked for recursive calls, so patching it to force
-# the code to run in the test suite is necessary.
+Turns out testing a testing library is pretty confusing!
+"""
+import inspect
+import sys
+import unittest
+from contextlib import contextmanager
+from io import StringIO
+
+from autosuite.autosuite import (
+    TestCase, testcase_to_str, format_mod, format_exception_name, EQUAL,
+    NOT_EQUAL, EXCEPTION, generate_imports, wrap, gettests, suite, clear
+)
+
+from mylib import fib, FibonacciError, FibTestClass
+
+# Patch inspect.stack so that when it is invoked from an instance method of the
+# Tester class, it behaves as if it were invoked from the Python shell. The
+# autosuite tool uses inspect.stack to ensure the autosuite code isn't
+# spuriously invoked for recursive calls, so we have to patch it so that it
+# will run in the test suite.
 old_inspect_stack = inspect.stack
+
 
 def new_inspect_stack(*args, **kwargs):
     stack = old_inspect_stack(*args, **kwargs)
@@ -12,35 +29,28 @@ def new_inspect_stack(*args, **kwargs):
     stack.pop(0)
     if is_tester_frame(stack[1].frame):
         # Insert a frame that mimics the top level of the Python shell.
-        frame = inspect.FrameInfo(frame=None, filename='<stdin>', lineno=1, function='<module>',
-            code_context=None, index=None)
+        frame = inspect.FrameInfo(frame=None, filename='<stdin>', lineno=1,
+            function='<module>', code_context=None, index=None)
         stack.insert(1, frame)
     return stack
+
 
 def is_tester_frame(frame):
     return isinstance(frame.f_locals.get('self'), Tester)
 
 inspect.stack = new_inspect_stack
 
-import sys
-import unittest
-from contextlib import contextmanager
-from io import StringIO
-
-from autosuite.autosuite import (
-    TestCase, _testcase_to_str, _format_mod, _format_exception_name, EQUAL, NOT_EQUAL, EXCEPTION,
-    _generate_imports, _format_function_call, wrap, gettests, suite, clear
-)
-
-from mylib import fib, FibonacciError
-
 
 def dummy(*args, **kwargs):
     pass
 
+
 class DummyClass:
     def dummy_method(self):
         pass
+
+class NoRepr:
+    pass
 
 
 class Tester(unittest.TestCase):
@@ -49,48 +59,67 @@ class Tester(unittest.TestCase):
 
     def test_testcase_to_str(self):
         case = TestCase(EQUAL, dummy, (1, 2, 3), {'verbose': True}, 42)
-        self.assertEqual(_testcase_to_str(case),
+        self.assertEqual(testcase_to_str(case),
             'self.assertEqual(test_main.dummy(1, 2, 3, verbose=True), 42)')
 
         case = TestCase(NOT_EQUAL, dummy, ('abc', True), {}, b'abc')
-        self.assertEqual(_testcase_to_str(case),
+        self.assertEqual(testcase_to_str(case),
             'self.assertNotEqual(test_main.dummy(\'abc\', True), b\'abc\')')
 
         case = TestCase(EXCEPTION, fib, (-1,), {}, FibonacciError())
-        self.assertEqual(_testcase_to_str(case),
-            'with self.assertRaises(mylib.FibonacciError):\n            mylib.fib(-1)')
+        self.assertEqual(testcase_to_str(case),
+            'with self.assertRaises(mylib.FibonacciError):\n    mylib.fib(-1)')
 
         # Test various combinations of args and kwargs.
         case = TestCase(EQUAL, dummy, (), {}, 0)
-        self.assertEqual(_testcase_to_str(case), 'self.assertEqual(test_main.dummy(), 0)')
+        self.assertEqual(testcase_to_str(case),
+            'self.assertEqual(test_main.dummy(), 0)')
 
         case = TestCase(EQUAL, dummy, (), {'whatever': 42}, [6, 7])
-        self.assertEqual(_testcase_to_str(case),
+        self.assertEqual(testcase_to_str(case),
             'self.assertEqual(test_main.dummy(whatever=42), [6, 7])')
 
     def test_testcase_to_str_with_method(self):
         case = TestCase(EQUAL, DummyClass.dummy_method, (), {}, '')
-        self.assertEqual(_testcase_to_str(case),
+        self.assertEqual(testcase_to_str(case),
             'self.assertEqual(test_main.DummyClass.dummy_method(), \'\')')
 
+    def test_testcase_to_str_with_NoRepr(self):
+        case = TestCase(EQUAL, dummy, (NoRepr(),), {}, None)
+        with self.assertRaises(ValueError):
+            testcase_to_str(case)
+
     def test_format_mod(self):
-        self.assertEqual(_format_mod('mylib'), 'mylib.')
-        self.assertEqual(_format_mod('builtins'), '')
-        self.assertEqual(_format_mod('__main__'), '')
+        self.assertEqual(format_mod('mylib'), 'mylib.')
+        self.assertEqual(format_mod('builtins'), '')
+        self.assertEqual(format_mod('__main__'), '')
 
     def test_format_exception_name(self):
-        self.assertEqual(_format_exception_name(ValueError()), 'ValueError')
-        self.assertEqual(_format_exception_name(FibonacciError()), 'mylib.FibonacciError')
+        self.assertEqual(format_exception_name(ValueError()), 'ValueError')
+        self.assertEqual(format_exception_name(FibonacciError()),
+            'mylib.FibonacciError')
 
     def test_generate_imports(self):
         tests = [
-            TestCase(EQUAL, dummy, (1, 2, 3), {}, 42),
+            TestCase(EQUAL, dummy, (1, 2, 3), {}, FibTestClass()),
             TestCase(EXCEPTION, fib, (-1,), {}, FibonacciError()),
         ]
-        self.assertEqual(_generate_imports(tests), 'import mylib\nimport test_main')
+        self.assertEqual(generate_imports(tests),
+            'import mylib\nimport test_main')
+
+        tests = [
+            TestCase(EQUAL, dummy, (1, 2, 3), {}, FibTestClass()),
+        ]
+        self.assertEqual(generate_imports(tests),
+            'import mylib\nimport test_main')
+
+    def test_empty_suite_prints_nothing(self):
+        mock_stdout = StringIO()
+        with redirect_io(new_stdout=mock_stdout):
+            suite()
+        self.assertEqual(mock_stdout.getvalue(), '')
 
     def test_suite(self):
-        self.assertEqual(suite(), '')
         tests = gettests()
         tests.extend([
             TestCase(EQUAL, dummy, (1, 2, 3), {}, 42),
@@ -112,8 +141,15 @@ class Tester(unittest.TestCase):
 
 ''')
 
-        clear()
-        self.assertEqual(suite(), '')
+    def test_suite_with_NoRepr(self):
+        tests = gettests()
+        tests.extend([
+            TestCase(EQUAL, dummy, (NoRepr(),), {}, None),
+        ])
+        mock_stdout = StringIO()
+        with redirect_io(new_stdout=mock_stdout):
+            suite()
+        self.assertEqual(mock_stdout.getvalue(), '')
 
     def test_wrap(self):
         mock_stdin = StringIO('y\n')
@@ -126,8 +162,8 @@ class Tester(unittest.TestCase):
         self.assertEqual(mock_stdin.readline(), '')
 
     def test_wrap_nested(self):
-        """Test that an indirect call (i.e., not from the top-level) to a wrapped function does not
-        trigger the autosuite prompt.
+        """Test that an indirect call (i.e., not from the top-level) to a
+        wrapped function does not trigger the autosuite prompt.
         """
         mock_stdin = StringIO('y\n')
         mock_stdout = StringIO()
@@ -142,8 +178,8 @@ class Tester(unittest.TestCase):
 
 @contextmanager
 def redirect_io(new_stdin=StringIO(), new_stdout=StringIO()):
-    """A context manager to redirect stdin and stdout to the given files, and restore them when
-    finished.
+    """A context manager to redirect stdin and stdout to the given files, and
+    restore them when finished.
     """
     stdin_old = sys.stdin
     stdout_old = sys.stdout
